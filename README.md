@@ -1,4 +1,4 @@
-# <<NOMBRE>>
+# KotlinXO
 
 Juego de **Tres en Raya** (tres en línea) para Android, escrito en **Kotlin**, para **dos jugadores en el mismo dispositivo**. X empieza siempre; los jugadores se turnan tocando casillas vacías.
 
