@@ -165,4 +165,46 @@ class Juego {
     fun hayGanador(): Boolean {
         return ganador != null
     }
+
+    /**
+     * Serializa el tablero en 9 caracteres (fila a fila): "X", "O" o "-" si la casilla está vacía.
+     */
+    fun serializarTablero(): String = buildString {
+        for (fila in 0 until Tablero.TAMANO) {
+            for (columna in 0 until Tablero.TAMANO) {
+                val valor = tablero.obtenerCasilla(fila, columna).valor
+                append(if (valor.isEmpty()) '-' else valor[0])
+            }
+        }
+    }
+
+    /**
+     * Restaura el estado desde un tablero serializado y el símbolo del jugador con el turno.
+     * Recalcula ganador y estado activo. Si los datos no son válidos no modifica nada.
+     * @return true si se restauró el estado
+     */
+    fun restaurarEstado(tableroSerializado: String?, simboloTurno: String?): Boolean {
+        val total = Tablero.TAMANO * Tablero.TAMANO
+        if (tableroSerializado == null || tableroSerializado.length != total) return false
+        if (simboloTurno != Jugador.SIMBOLO_X && simboloTurno != Jugador.SIMBOLO_O) return false
+        if (tableroSerializado.any { it != 'X' && it != 'O' && it != '-' }) return false
+
+        tablero.limpiar()
+        tableroSerializado.forEachIndexed { indice, caracter ->
+            if (caracter != '-') {
+                tablero.obtenerCasilla(indice / Tablero.TAMANO, indice % Tablero.TAMANO)
+                    .asignarValor(caracter.toString())
+            }
+        }
+        jugadorActual = if (simboloTurno == jugador1.simbolo) jugador1 else jugador2
+
+        val simboloGanador = detectorVictoria.verificarGanador(tablero)
+        ganador = when (simboloGanador) {
+            jugador1.simbolo -> jugador1
+            jugador2.simbolo -> jugador2
+            else -> null
+        }
+        juegoActivo = simboloGanador == null && !tablero.estaLleno()
+        return true
+    }
 }
