@@ -28,6 +28,11 @@ class MainActivity : AppCompatActivity() {
     private var textoEmpates: TextView? = null
     private var textoPartidasTotales: TextView? = null
 
+    companion object {
+        private const val CLAVE_TABLERO = "tablero"
+        private const val CLAVE_TURNO = "turno"
+    }
+
     private val mensajesVictoriaX = listOf(
         "JUGADOR X DOMINA EL TABLERO",
         "X STRIKES AGAIN",
@@ -55,19 +60,43 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.actividad_principal)
-        initGame()
+        initGame(savedInstanceState)
     }
 
-    private fun initGame() {
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        juego?.let {
+            outState.putString(CLAVE_TABLERO, it.serializarTablero())
+            outState.putString(CLAVE_TURNO, it.obtenerJugadorActual().simbolo)
+        }
+    }
+
+    private fun initGame(estadoGuardado: Bundle? = null) {
         try {
             juego = Juego()
             estadisticas = EstadisticasJuego(this)
             initViews()
             setupEventListeners()
+            restaurarPartida(estadoGuardado)
             updateUI()
             updateStats()
         } catch (e: Exception) {
             handleError("Error inicializando el juego", e)
+        }
+    }
+
+    /**
+     * Recupera la partida en curso tras recrearse la actividad (modo oscuro, idioma, etc.).
+     * Las estadísticas ya persisten en SharedPreferences y no se vuelven a contabilizar.
+     */
+    private fun restaurarPartida(estado: Bundle?) {
+        val game = juego ?: return
+        if (estado == null) return
+        if (!game.restaurarEstado(estado.getString(CLAVE_TABLERO), estado.getString(CLAVE_TURNO))) return
+
+        when {
+            game.hayGanador() -> showWinnerWithAnimation(game.obtenerGanador()?.esJugadorX() == true)
+            game.esEmpate() -> showDrawWithAnimation()
         }
     }
 
