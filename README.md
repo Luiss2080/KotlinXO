@@ -1,232 +1,76 @@
-# 🎮 Tres en Raya - Kotlin Android
+# KotlinXO
 
-Un juego completo de Tres en Raya (Tic Tac Toe) desarrollado en Kotlin para Android, siguiendo el patrón Modelo-Vista-Controlador (MVC).
+Juego de **Tres en Raya** (tres en línea) para Android, escrito en **Kotlin**, para **dos jugadores en el mismo dispositivo**. X empieza siempre; los jugadores se turnan tocando casillas vacías.
 
-## 📱 Características
+> Estado del proyecto: aplicación pequeña de aprendizaje/portafolio. La lógica del juego tiene tests unitarios; no está publicada ni pensada para producción (ver [Limitaciones](#limitaciones)).
 
-- ✅ Juego completo de Tres en Raya para dos jugadores
-- ✅ Interfaz intuitiva y responsive
-- ✅ Detección automática de victoria y empate
-- ✅ Reinicio rápido del juego
-- ✅ Soporte para orientación portrait
-- ✅ Compatible con Android API 24+ (Android 7.0+)
-- ✅ Optimizado para emuladores Pixel 9 y dispositivos modernos
+## Características (verificadas en el código)
 
-## 🏗️ Arquitectura
+- Partida de dos jugadores por turnos en un tablero de 3x3, orientación **vertical** (bloqueada en el manifiesto).
+- Detección de victoria en las **8 líneas** posibles (3 filas, 3 columnas, 2 diagonales).
+- Detección de **empate**: solo con el tablero lleno y sin ganador. Ganar con la novena jugada es victoria, no empate.
+- No se puede jugar en una casilla ocupada, fuera del tablero ni una vez terminada la partida (lo garantiza el modelo; además la interfaz deshabilita las casillas).
+- **Estadísticas persistentes** (victorias de X, victorias de O, empates y partidas totales) guardadas con `SharedPreferences`; sobreviven al cierre de la app. El botón de reinicio de estadísticas pide confirmación.
+- Botón para empezar una **nueva partida** sin tocar las estadísticas.
+- Mensajes de fin de partida elegidos al azar de una lista fija.
+- La partida en curso sobrevive a la recreación de la actividad (por ejemplo, cambiar entre modo claro y oscuro o de idioma): tablero y turno se guardan en `onSaveInstanceState`.
 
-El proyecto sigue el patrón **MVC (Modelo-Vista-Controlador)**:
+No hay inteligencia artificial: **no existe modo de un jugador** contra la máquina.
 
-### Modelo
-- `Juego.kt` - Lógica principal del juego
-- `Tablero.kt` - Gestión del tablero 3x3
-- `Casilla.kt` - Representación de cada casilla
-- `Jugador.kt` - Gestión de jugadores
-- `DetectorVictoria.kt` - Detección de condiciones de victoria
-- `ValidadorMovimiento.kt` - Validación de movimientos
+## Arquitectura
 
-### Vista
-- `actividad_principal.xml` - Layout de la interfaz
-- `strings.xml` - Textos en español
-- `colors.xml` - Paleta de colores
+Paquete `com.example.tresenrayakotlin`. La lógica está separada de la interfaz, pero **no es un MVC completo**: no hay capa de controladores; `MainActivity` hace de vista y controlador a la vez.
 
-### Controlador
-- `MainActivity.kt` - Actividad principal que conecta Modelo y Vista
+| Parte | Archivos | Responsabilidad |
+|-------|----------|-----------------|
+| Modelo puro (`modelo`) | `Juego`, `Tablero`, `Casilla`, `Jugador`, `DetectorVictoria`, `ValidadorMovimiento` | Reglas y estado. Sin dependencias de Android; se prueba con JUnit en la JVM. |
+| Modelo con Android | `EstadisticasJuego` | Persistencia de estadísticas en `SharedPreferences` (necesita `Context`). |
+| Vista + control | `MainActivity`, `res/layout/actividad_principal.xml` | Dibuja el estado, captura los toques y llama al modelo. |
 
-## 🚀 Configuración para Desarrollo
+`Juego` coordina `Tablero`, `ValidadorMovimiento` y `DetectorVictoria`, y sabe serializar/restaurar su estado (9 caracteres `X`/`O`/`-`).
 
-### Requisitos
-- **Android Studio** Arctic Fox o superior
-- **Android SDK** API 24-34
-- **Kotlin** 1.9.20+
-- **Gradle** 8.5+
+## Requisitos
 
-### Configuraciones del Proyecto
+- Android Studio reciente, **o** línea de comandos con:
+- **JDK 17** (necesario para Android Gradle Plugin 8.x).
+- Android SDK con la plataforma **API 33** (`compileSdk` = `targetSdk` = 33; `minSdk` = 24, Android 7.0).
+- Gradle 8.11.1 lo descarga el wrapper; AGP 8.7.3 y Kotlin 2.1.0 (ver `gradle/libs.versions.toml`).
 
-#### 1. Configuración del Module (app/build.gradle.kts)
-```kotlin
-android {
-    namespace = "com.example.tresenrayakotlin"
-    compileSdk = 34
+## Compilar y ejecutar
 
-    defaultConfig {
-        applicationId = "com.example.tresenrayakotlin"
-        minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables.useSupportLibrary = true
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
-    
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    
-    kotlinOptions {
-        jvmTarget = "11"
-    }
-}
-
-dependencies {
-    implementation(libs.androidx.core.ktx)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-}
-```
-
-#### 2. AndroidManifest.xml
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-
-    <application
-        android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light"
-        tools:targetApi="31">
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:screenOrientation="portrait"
-            android:configChanges="orientation|screenSize|keyboardHidden">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-    </application>
-</manifest>
-```
-
-## 📋 Instrucciones de Instalación
-
-### Para Desarrolladores
-
-1. **Clonar/Abrir el proyecto en Android Studio**
-   ```bash
-   # Si usas Git
-   git clone [url-del-repositorio]
-   cd TresEnRayaKotlin
-   ```
-
-2. **Sincronizar el proyecto**
-   - Android Studio → File → Sync Project with Gradle Files
-
-3. **Configurar el emulador**
-   - Crear un emulador Pixel 9 con API 34
-   - O conectar un dispositivo físico con depuración USB activada
-
-4. **Ejecutar el proyecto**
-   - Presionar el botón "Run" (▶️) en Android Studio
-   - O usar el comando: `./gradlew assembleDebug`
-
-### Solución de Problemas Comunes
-
-#### Error de compilación
-Si encuentras errores de compilación:
 ```bash
-# Limpiar el proyecto
-./gradlew clean
-
-# Reconstruir
-./gradlew build
+git clone <URL-del-repositorio>
+cd TresEnRayaKotlin
+./gradlew assembleDebug        # APK en app/build/outputs/apk/debug/
+./gradlew installDebug         # instala en un dispositivo/emulador conectado
 ```
 
-#### Problemas con el emulador
-- Asegúrate de que el emulador tenga al menos API 24
-- Verifica que tengas suficiente RAM disponible (mínimo 4GB)
-- Habilita la aceleración de hardware en BIOS/UEFI
+El build de *debug* usa el sufijo `.debug` en el `applicationId`. También puedes abrir el proyecto en Android Studio y pulsar **Run**. Si hace falta, crea `local.properties` con `sdk.dir=<ruta-a-tu-SDK>` (está ignorado por git).
 
-#### Errores de dependencias
-- Verifica que Android SDK esté actualizado
-- Sincroniza nuevamente el proyecto
-- Invalida cachés: File → Invalidate Caches and Restart
+## Tests
 
-## 🎯 Cómo Jugar
+Tests unitarios de la lógica, en la JVM y sin emulador:
 
-1. **Inicio**: El jugador X siempre comienza
-2. **Turnos**: Los jugadores alternan tocando casillas vacías
-3. **Victoria**: Tres símbolos iguales en línea (horizontal, vertical o diagonal)
-4. **Empate**: Tablero lleno sin ganador
-5. **Reiniciar**: Presionar "Reiniciar Juego" para una nueva partida
-
-## 🔧 Estructura de Archivos
-
-```
-TresEnRayaKotlin/
-├── app/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/example/tresenrayakotlin/
-│   │   │   │   ├── MainActivity.kt
-│   │   │   │   └── modelo/
-│   │   │   │       ├── Juego.kt
-│   │   │   │       ├── Tablero.kt
-│   │   │   │       ├── Casilla.kt
-│   │   │   │       ├── Jugador.kt
-│   │   │   │       ├── DetectorVictoria.kt
-│   │   │   │       └── ValidadorMovimiento.kt
-│   │   │   ├── res/
-│   │   │   │   ├── layout/
-│   │   │   │   │   └── actividad_principal.xml
-│   │   │   │   ├── values/
-│   │   │   │   │   ├── strings.xml
-│   │   │   │   │   └── colors.xml
-│   │   │   │   └── ...
-│   │   │   └── AndroidManifest.xml
-│   │   └── ...
-│   └── build.gradle.kts
-├── gradle/
-│   └── libs.versions.toml
-├── build.gradle.kts
-├── settings.gradle.kts
-└── README.md
+```bash
+./gradlew test
 ```
 
-## ✨ Próximas Mejoras
+Cubren `DetectorVictoria` (las 8 líneas para X y O, líneas incompletas o mezcladas, empate y victoria en la última casilla), `Juego` (turnos, casillas ocupadas o fuera de rango, bloqueo tras terminar, ganador, reinicio, serialización del estado), `Tablero`, `ValidadorMovimiento` y `Jugador`.
 
-- [ ] Modo de juego contra IA
-- [ ] Animaciones de movimiento
-- [ ] Sonidos y efectos
-- [ ] Contador de puntuación
-- [ ] Temas personalizables
-- [ ] Modo multijugador online
+**No** hay tests de `MainActivity` ni de `EstadisticasJuego` (requieren Android); solo queda el `ExampleInstrumentedTest` de la plantilla.
 
-## 📝 Notas Técnicas
+Integración continua: `.github/workflows/ci.yml` ejecuta `./gradlew test` con JDK 17 en cada push y pull request.
 
-- **Lenguaje**: Kotlin 100%
-- **Arquitectura**: MVC (Modelo-Vista-Controlador)
-- **Compatibilidad**: Android 7.0+ (API 24+)
-- **Pantallas**: Optimizado para móviles en portrait
-- **Dependencias**: Mínimas (solo Android SDK estándar)
+## Limitaciones
 
-## 🐛 Reporte de Bugs
+- Solo dos jugadores locales; sin IA, sonidos, animaciones de movimiento ni multijugador en línea.
+- La interfaz **no indica de quién es el turno** (los recursos `turno_jugador_x/o` existen pero no se usan); solo se ve el símbolo tras jugar.
+- Solo modo vertical y tema claro (`Theme.AppCompat.Light`).
+- Varios textos de la interfaz (mensajes de fin de partida, diálogos) están escritos directamente en el código Kotlin, no en `strings.xml`; solo hay un idioma (español).
+- Las versiones de las dependencias en `app/build.gradle.kts` están escritas a mano y no usan el catálogo de versiones de `gradle/libs.versions.toml`.
+- El `applicationId` es el de plantilla (`com.example.tresenrayakotlin`); el build de *release* no está firmado ni minificado.
+- Solo se ha verificado la lógica del modelo con tests en la JVM; la compilación completa de la app y el comportamiento en un dispositivo real dependen de tu entorno Android.
 
-Si encuentras algún problema:
-1. Verifica que cumples los requisitos mínimos
-2. Intenta limpiar y reconstruir el proyecto
-3. Revisa los logs de Android Studio
-4. Crea un issue con detalles del error
+## Licencia
 
----
-
-**¡Disfruta jugando Tres en Raya!** 🎉
+Este repositorio **no incluye ningún archivo de licencia**. Sin licencia explícita, todos los derechos quedan reservados por el autor y no se concede permiso de uso, copia ni redistribución. Si quieres que otros puedan reutilizarlo, añade un archivo `LICENSE` (por ejemplo MIT o Apache-2.0).
